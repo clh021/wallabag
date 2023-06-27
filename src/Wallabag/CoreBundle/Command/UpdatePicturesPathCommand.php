@@ -3,6 +3,7 @@
 namespace Wallabag\CoreBundle\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
+use JMS\Serializer\SerializerBuilder;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -42,15 +43,21 @@ class UpdatePicturesPathCommand extends Command
 
         $oldUrl = $input->getArgument('old-url');
 
-        $entries = $this->entryRepository->findAll();
+        $results = $this->entryRepository->findAll();
+        $entries = SerializerBuilder::create()->build()->toArray($results);
         $io->text('Retrieve existing entries');
         $i = 1;
         foreach ($entries as $entry) {
-            $content = str_replace($oldUrl, $this->wallabagUrl, $entry->getContent());
-            $previewPicture = str_replace($oldUrl, $this->wallabagUrl, $entry->getPreviewPicture());
-            $entry->setContent($content);
-            $entry->setPreviewPicture($previewPicture);
-            $this->entityManager->persist($entry);
+            $entryInDB = $this->entryRepository->find($entry['id']);
+            $content = str_replace($oldUrl, $this->wallabagUrl, $entry['content']);
+            $entryInDB->setContent($content);
+
+            if (isset($entry['preview_picture'])) {
+                $previewPicture = str_replace($oldUrl, $this->wallabagUrl, $entry['preview_picture']);
+                $entryInDB->setPreviewPicture($previewPicture);
+            }
+
+            $this->entityManager->persist($entryInDB);
 
             if (0 === ($i % 20)) {
                 $this->entityManager->flush();
