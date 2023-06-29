@@ -52,8 +52,6 @@ class UpdatePicturesPathCommand extends Command
             $previewPicture = str_replace($oldUrl, $this->wallabagUrl, $entry->getPreviewPicture());
             $entry->setPreviewPicture($previewPicture);
 
-            $this->entityManager->persist($entry);
-
             if (0 === ($i % 20)) {
                 $this->entityManager->flush();
             }
