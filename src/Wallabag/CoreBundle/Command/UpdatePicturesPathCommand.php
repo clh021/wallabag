@@ -43,21 +43,17 @@ class UpdatePicturesPathCommand extends Command
 
         $oldUrl = $input->getArgument('old-url');
 
-        $results = $this->entryRepository->findAll();
-        $entries = SerializerBuilder::create()->build()->toArray($results);
+        $query = $this->entryRepository->createQueryBuilder('e')->getQuery();
         $io->text('Retrieve existing entries');
         $i = 1;
-        foreach ($entries as $entry) {
-            $entryInDB = $this->entryRepository->find($entry['id']);
-            $content = str_replace($oldUrl, $this->wallabagUrl, $entry['content']);
-            $entryInDB->setContent($content);
+        foreach ($query->toIterable() as $entry) {
+            $content = str_replace($oldUrl, $this->wallabagUrl, $entry->getContent());
+            $entry->setContent($content);
 
-            if (isset($entry['preview_picture'])) {
-                $previewPicture = str_replace($oldUrl, $this->wallabagUrl, $entry['preview_picture']);
-                $entryInDB->setPreviewPicture($previewPicture);
-            }
+            $previewPicture = str_replace($oldUrl, $this->wallabagUrl, $entry->getPreviewPicture());
+            $entry->setPreviewPicture($previewPicture);
 
-            $this->entityManager->persist($entryInDB);
+            $this->entityManager->persist($entry);
 
             if (0 === ($i % 20)) {
                 $this->entityManager->flush();
